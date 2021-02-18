@@ -157,12 +157,18 @@ Finally return the ligands
     lig_sele = pyrosetta.rosetta.core.select.residue_selector.ResiduePropertySelector(LIGAND)
     # get residue vector to find start and stop
     rv = pyrosetta.rosetta.core.select.residue_selector.ResidueVector(lig_sele.apply(original))
-    pyrosetta.rosetta.core.pose.append_subpose_to_pose(pose, 
-                                                       original,
-                                                       min(rv), 
-                                                       max(rv),
-                                                       True)
-    pose.dump_scored_pdb(f'combined.r1.loops.pdb', pyrosetta.get_fa_scorefxn())
+    # a few pose + pose functions don't like ligands, eg>
+    # pyrosetta.rosetta.core.pose.append_subpose_to_pose(pose, 
+    #                                                    original,
+    #                                                    min(rv), 
+    #                                                    max(rv),
+    #                                                    True)
+    # Can't create a polymer bond after residue 785 due to incompatible type: CMP
+    # ditto for
+    # pyrosetta.rosetta.core.pose.append_pose_to_pose(pose, lig_pose, True)
+    # pyrosetta.rosetta.protocols.grafting.insert_pose_into_pose(pose, original, pose.total_residue())
+    lig_pose = pyrosetta.rosetta.protocols.grafting.return_region(original, min(rv),  max(rv))
+    pose.append_pose_by_jump(lig_pose, pose.total_residue())
 
 ### Post-Loops
 
