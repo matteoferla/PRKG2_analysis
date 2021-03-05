@@ -59,7 +59,7 @@ relax.set_movemap_disables_packing_of_fixed_chi_positions(True)
 relax.set_movemap(movemap)
 relax.apply(pose)
 ```
-A few variations were done. Including with constraints for turn e.g.
+A few variations were done. Including with constraints for turn and last residue's side chain to backbone e.g.
 ```jupyterpython
 def get_AtomID(chain:str, resi:int, atomname:str) -> pyrosetta.rosetta.core.id.AtomID:
     r = pose.pdb_info().pdb2pose(res=resi, chain=chain)
@@ -75,6 +75,11 @@ cons.append( AtomPairConstraint(get_AtomID('A', 759, 'O'),
                                 HarmonicFunc(x0_in=3.3, sd_in=0.2)
                                 )
             )
+cons.append( AtomPairConstraint(get_AtomID('A', 762, 'CZ'),
+                                get_AtomID('A', 527, 'O'),
+                                HarmonicFunc(x0_in=3.4, sd_in=0.2)
+                                )
+            )
 cl = pyrosetta.rosetta.utility.vector1_std_shared_ptr_const_core_scoring_constraints_Constraint_t()
 cl.extend(cons)
 cs = pyrosetta.rosetta.core.scoring.constraints.ConstraintSet()
@@ -82,16 +87,21 @@ cs.add_constraints(cl)
 setup = pyrosetta.rosetta.protocols.constraint_movers.ConstraintSetMover()
 setup.constraint_set(cs)
 setup.apply(pose)
-
+# scorefxn
+scorefxn = pyrosetta.get_fa_scorefxn()
 stm = pyrosetta.rosetta.core.scoring.ScoreTypeManager()
 scorefxn.set_weight(stm.score_type_from_name("atom_pair_constraint"), 10)
 ```
-or last residue's side chain to backbone
+The per residue scores were inspected
 ```jupyterpython
-cons.append( AtomPairConstraint(get_AtomID('A', 762, 'CZ'),
-                                get_AtomID('A', 527, 'O'),
-                                HarmonicFunc(x0_in=3.4, sd_in=0.2)
-                                )
-            )
+from pyrosetta_help.common_ops import pose2pandas
+pyrosetta.rosetta.protocols.constraint_generator.RemoveConstraints().apply(pose)
+scorefxn = pyrosetta.get_fa_scorefxn()
+scores = pose2pandas(pose)
+scores.loc[scores.total_score > 5][['residue', 'total_score']]
+rscores = pose2pandas(ref)
+rs_map = dict(zip(rscores.residue, rscores.total_score))
+scores['wt_score'] = scores.residue.apply(lambda v: rs_map[v] if v in rs_map else float('nan'))
+scores['∆∆G'] = scores.total_score - scores.wt_score
+scores.loc[scores['∆∆G'] >= 2][['residue', 'total_score']]
 ```
-Constraints were ommitted from final results due to incompatibility of extension with turn + F sidechain in core.
