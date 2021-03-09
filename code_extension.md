@@ -121,9 +121,9 @@ Getting the top scoring x20 and doing a 5 cycle x10, x5, x0 gradient does not im
 Relatedly, 
 15 relax cycles with constraints gives:
 
-DF761EL: +9.5 kcal/mol
-DF761ELX[NME] 23.1 kcal/mol
-DF761ELLX[NME] 16.2 kcal/mol
+DF761EL: +6.5 kcal/mol
+DF761ELX[NME] 4.3 kcal/mol
+DF761ELLX[NME] 10.8 kcal/mol
 
 The per residue scores were inspected
 ```jupyterpython
